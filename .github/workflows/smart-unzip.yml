@@ -1,0 +1,53 @@
+name: Smart Unzip Mindustry Mod
+
+on:
+  push:
+    paths:
+      - "*.zip"
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Extract ZIP
+        run: |
+          mkdir -p temp
+          for file in *.zip; do
+            echo "Unzipping $file"
+            unzip -o "$file" -d temp
+          done
+
+      - name: Smart flatten (remove single root folder)
+        run: |
+          shopt -s dotglob
+
+          # проверяем есть ли ОДНА папка внутри
+          inner=$(find temp -mindepth 1 -maxdepth 1 -type d)
+
+          count=$(echo "$inner" | wc -l)
+
+          if [ "$count" -eq 1 ]; then
+            echo "Detected single root folder → flattening"
+            cp -r $inner/* .
+          else
+            echo "Multiple items → direct merge"
+            cp -r temp/* .
+          fi
+
+      - name: Cleanup
+        run: rm -rf temp *.zip
+
+      - name: Commit result
+        run: |
+          git config user.name "auto-mod-unzip"
+          git config user.email "bot@users.noreply.github.com"
+          git add .
+          git commit -m "Smart unzip mod" || echo "No changes"
+          git push
