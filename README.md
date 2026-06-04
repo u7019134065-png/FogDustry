@@ -1,2 +1,0 @@
-# FogDustry
-New mindustryMod! Fogdustry
